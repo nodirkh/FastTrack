@@ -13,6 +13,8 @@ Prompts to:
 import sys
 from pathlib import Path
 
+from argparse import ArgumentParser
+
 import questionary
 from rich.console import Console
 from rich.table import Table
@@ -24,6 +26,7 @@ from iter.stages.patcher import ExtractPatchesStage, ApplyPatchesStage
 from iter.stages.build import BuildStage
 from iter.stages.rootfs import RootfsStage
 from iter.stages.emulator import EmulatorStage
+from iter.nested import NestedBuildStage, NestedEmulatorStage
 
 console = Console()
 
@@ -49,11 +52,21 @@ class LaunchConsole:
 
     def __init__(self):
         self.gc = GlobalConfig()
+        self.parser = ArgumentParser()
+
+        self.parser.add_argument("-c", "--config", action="store_true", description="path to global config", default=".")
 
     # -- entry -----------------------------------------------------------------
 
     def run(self) -> None:
         console.print(f"[cyan]{ASCII_BANNER}[/cyan]")
+
+        args = self.parser.parse_args()
+
+        if not Path.joinpath(args.config, "config.global.yaml").exists():
+            console.print(f"[yellow]Global config not found. Initializing...[/yellow]")
+            
+
 
         # Always sync base trees first
         console.print("\n[bold]Base trees[/bold]")
@@ -134,12 +147,31 @@ class LaunchConsole:
         ctx = Context(global_config=self.gc, iteration_name=name, iteration_config=cfg)
 
         console.print(f"\n[bold]Running iteration [cyan]{name}[/cyan][/bold]")
-        Pipeline([
-            ApplyPatchesStage(),
-            BuildStage(),
-            RootfsStage(),
-            EmulatorStage(),
-        ]).run(ctx)
+
+        if cfg.nested:
+            console.print("[dim]  (nested virtualization enabled)[/dim]")
+
+            # Offer tmux multi-window mode when available
+            from iter.tmux import TmuxSession
+            if TmuxSession.available():
+                use_tmux = questionary.confirm(
+                    "Launch in tmux? (serial, monitor, logs, L1/L2 in separate windows)",
+                    default=True,
+                ).ask()
+                ctx.artifacts["_use_tmux"] = bool(use_tmux)
+
+            Pipeline([
+                ApplyPatchesStage(),
+                NestedBuildStage(),
+                NestedEmulatorStage(),
+            ]).run(ctx)
+        else:
+            Pipeline([
+                ApplyPatchesStage(),
+                BuildStage(),
+                RootfsStage(),
+                EmulatorStage(),
+            ]).run(ctx)
 
     # -- display ---------------------------------------------------------------
 

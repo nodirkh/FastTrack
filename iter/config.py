@@ -20,6 +20,8 @@ TREE_URLS = {
     "kvm": "https://git.kernel.org/pub/scm/virt/kvm/kvm.git",
 }
 
+QEMU_DEFAULT_URL = "https://gitlab.com/qemu-project/qemu.git"
+
 
 # ---------------------------------------------------------------------------
 # GlobalConfig
@@ -41,6 +43,10 @@ class GlobalConfig:
     @property
     def rootfs_dir(self) -> Path:
         return self.root / "rootfs"
+
+    @property
+    def qemu_dir(self) -> Path:
+        return self.base_dir / "qemu"
 
     def tree_path(self, tree: str) -> Path:
         return self.base_dir / tree
@@ -71,6 +77,7 @@ class IterationConfig:
     rootfs: dict[str, Any]        # shared, path | type, config
     emulation: dict[str, Any]     # type, memory, cpus, extra_args
     nix: dict[str, Any]           # enabled, flake?
+    nested: dict[str, Any] | None = None  # hypervisor + guest config (None = single-VM mode)
 
 
 # ---------------------------------------------------------------------------

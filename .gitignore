@@ -43,3 +43,5 @@ htmlcov/
 
 # macOS
 .DS_Store
+
+cmt.txt

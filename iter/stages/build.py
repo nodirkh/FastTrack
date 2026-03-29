@@ -7,6 +7,7 @@ from pathlib import Path
 
 from rich.console import Console
 
+from iter.nix import nix_wrap
 from iter.pipeline import Stage, Context
 
 console = Console()
@@ -51,11 +52,7 @@ class KernelBuilder:
         effective_jobs = jobs or os.cpu_count() or 4
         make = f"make O={self.build_dir} -j{effective_jobs} bzImage"
 
-        if self.nix.get("enabled"):
-            flake = self.nix.get("flake", ".#devShell")
-            cmd = f"nix develop {flake} --command bash -c '{make}'"
-        else:
-            cmd = make
+        cmd = nix_wrap(make, self.nix)
 
         console.print(f"    Building... (log → {self.log_path})")
 

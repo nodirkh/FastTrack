@@ -8,6 +8,8 @@ from pathlib import Path
 
 from rich.console import Console
 
+from iter.nix import nix_wrap
+
 console = Console()
 
 _QEMU_TARGETS = {
@@ -23,10 +25,11 @@ class QemuBuilder:
     *build_dir* holds the configure/make output (separate per build).
     """
 
-    def __init__(self, source_dir: Path, build_dir: Path, log_path: Path):
+    def __init__(self, source_dir: Path, build_dir: Path, log_path: Path, nix: dict | None = None):
         self.source_dir = source_dir
         self.build_dir = build_dir
         self.log_path = log_path
+        self.nix = nix or {}
 
     def sync(self, url: str, ref: str) -> None:
         """Clone (if needed), fetch, and checkout *ref*."""
@@ -60,9 +63,10 @@ class QemuBuilder:
         cmd += args
 
         console.print(f"    Configuring QEMU... (log → {self.log_path})")
+        shell_cmd = nix_wrap(" ".join(cmd), self.nix)
         with open(self.log_path, "w") as log:
             result = subprocess.run(
-                cmd, cwd=self.build_dir,
+                shell_cmd, cwd=self.build_dir, shell=True,
                 stdout=log, stderr=subprocess.STDOUT,
             )
         if result.returncode != 0:
@@ -74,10 +78,11 @@ class QemuBuilder:
         effective_jobs = jobs or os.cpu_count() or 4
 
         console.print(f"    Building QEMU ({effective_jobs} jobs)...")
+        make = f"make -j{effective_jobs}"
+        shell_cmd = nix_wrap(make, self.nix)
         with open(self.log_path, "a") as log:
             result = subprocess.run(
-                ["make", f"-j{effective_jobs}"],
-                cwd=self.build_dir,
+                shell_cmd, cwd=self.build_dir, shell=True,
                 stdout=log, stderr=subprocess.STDOUT,
             )
         if result.returncode != 0:

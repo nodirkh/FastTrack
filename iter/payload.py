@@ -26,6 +26,8 @@ from typing import Any
 
 from rich.console import Console
 
+from iter.nix import nix_wrap
+
 console = Console()
 
 
@@ -40,7 +42,7 @@ class Payload(ABC):
         """True if the payload runs inside a guest Linux kernel."""
 
     @abstractmethod
-    def build(self, build_dir: Path, log_path: Path) -> None:
+    def build(self, build_dir: Path, log_path: Path, nix: dict | None = None) -> None:
         """Build or prepare the payload.  Called during NestedBuildStage."""
 
     @abstractmethod
@@ -87,7 +89,7 @@ class ScriptPayload(Payload):
     def needs_guest_linux(self) -> bool:
         return True
 
-    def build(self, build_dir: Path, log_path: Path) -> None:
+    def build(self, build_dir: Path, log_path: Path, nix: dict | None = None) -> None:
         pass
 
     def inject(self, share_dir: Path) -> None:
@@ -150,7 +152,7 @@ class BinaryPayload(Payload):
     def needs_guest_linux(self) -> bool:
         return True
 
-    def build(self, build_dir: Path, log_path: Path) -> None:
+    def build(self, build_dir: Path, log_path: Path, nix: dict | None = None) -> None:
         if not self.path.exists():
             raise FileNotFoundError(f"Payload binary not found: {self.path}")
 
@@ -244,7 +246,7 @@ class KvmUnitTestsPayload(Payload):
     def needs_guest_linux(self) -> bool:
         return False
 
-    def build(self, build_dir: Path, log_path: Path) -> None:
+    def build(self, build_dir: Path, log_path: Path, nix: dict | None = None) -> None:
         build_dir.mkdir(parents=True, exist_ok=True)
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -272,10 +274,15 @@ class KvmUnitTestsPayload(Payload):
         )
 
         # Configure
-        cmd_cfg = ["./configure", f"--arch={self.arch}"] + self.configure_args
+        configure = "./configure --arch=" + self.arch
+        if self.configure_args:
+            configure += " " + " ".join(self.configure_args)
         console.print(f"    Configuring (arch={self.arch})...")
         with open(log_path, "w") as log:
-            r = subprocess.run(cmd_cfg, cwd=src_dir, stdout=log, stderr=subprocess.STDOUT)
+            r = subprocess.run(
+                nix_wrap(configure, nix), cwd=src_dir, shell=True,
+                stdout=log, stderr=subprocess.STDOUT,
+            )
         if r.returncode != 0:
             console.print(f"[red]    configure failed. See {log_path}[/red]")
             raise RuntimeError("kvm-unit-tests configure failed")
@@ -285,7 +292,7 @@ class KvmUnitTestsPayload(Payload):
         console.print(f"    Building ({jobs} jobs)...")
         with open(log_path, "a") as log:
             r = subprocess.run(
-                ["make", f"-j{jobs}"], cwd=src_dir,
+                nix_wrap(f"make -j{jobs}", nix), cwd=src_dir, shell=True,
                 stdout=log, stderr=subprocess.STDOUT,
             )
         if r.returncode != 0:

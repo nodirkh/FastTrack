@@ -241,7 +241,7 @@ class Guest:
             configure_args.append("--static")
 
         console.print("  [bold cyan]Guest QEMU[/bold cyan]")
-        builder = QemuBuilder(gc.qemu_dir, build_dir, log_path)
+        builder = QemuBuilder(gc.qemu_dir, build_dir, log_path, self.iter_cfg.nix)
         builder.sync(url, ref)
         builder.configure(configure_args, emu_type)
         builder.build()
@@ -363,7 +363,7 @@ class Hypervisor:
             configure_args.append("--static")
 
         console.print("  [bold cyan]Hypervisor QEMU[/bold cyan]")
-        builder = QemuBuilder(gc.qemu_dir, build_dir, log_path)
+        builder = QemuBuilder(gc.qemu_dir, build_dir, log_path, self.iter_cfg.nix)
         builder.sync(url, ref)
         builder.configure(configure_args, emu_type)
         builder.build()
@@ -694,7 +694,7 @@ class NestedBuildStage(Stage):
             console.print("\n[bold]Building payload[/bold]")
             payload_build = gc.iter_dir(cfg.name) / "build" / "payload"
             payload_log   = gc.iter_dir(cfg.name) / "logs" / "payload-build.log"
-            payload.build(payload_build, payload_log)
+            payload.build(payload_build, payload_log, cfg.nix)
 
         # Pass objects to the emulator stage
         ctx.artifacts["_hypervisor"] = hypervisor

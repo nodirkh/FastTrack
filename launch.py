@@ -52,9 +52,6 @@ class LaunchConsole:
 
     def __init__(self):
         self.gc = GlobalConfig()
-        self.parser = ArgumentParser()
-
-        self.parser.add_argument("-c", "--config", action="store_true", description="path to global config", default=".")
 
     # -- entry -----------------------------------------------------------------
 
@@ -63,7 +60,7 @@ class LaunchConsole:
 
         args = self.parser.parse_args()
 
-        if not Path.joinpath(args.config, "config.global.yaml").exists():
+        if not Path(args.config).joinpath("config.global.yaml").exists():
             console.print(f"[yellow]Global config not found. Initializing...[/yellow]")
             
 

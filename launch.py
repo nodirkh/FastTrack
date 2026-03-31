@@ -13,11 +13,10 @@ Prompts to:
 import sys
 from pathlib import Path
 
-from argparse import ArgumentParser
-
 import questionary
 from rich.console import Console
 from rich.table import Table
+from typing import List
 
 from iter.config import GlobalConfig, ConfigParser, ConfigBuilder
 from iter.pipeline import Pipeline, Context
@@ -57,19 +56,11 @@ class LaunchConsole:
 
     def run(self) -> None:
         console.print(f"[cyan]{ASCII_BANNER}[/cyan]")
-
-        args = self.parser.parse_args()
-
-        if not Path(args.config).joinpath("config.global.yaml").exists():
-            console.print(f"[yellow]Global config not found. Initializing...[/yellow]")
-            
-
-
         # Always sync base trees first
         console.print("\n[bold]Base trees[/bold]")
         Pipeline([BaseStage()]).run(Context(global_config=self.gc))
 
-        iterations = self._list_iterations()
+        iterations = self._List_iterations()
         self._show_table(iterations)
 
         choices = [
@@ -113,7 +104,7 @@ class LaunchConsole:
         if questionary.confirm("\nRun this iteration now?", default=False).ask():
             self._run_iteration(cfg.name)
 
-    def _extract(self, iterations: list[str]) -> None:
+    def _extract(self, iterations: List[str]) -> None:
         if not iterations:
             console.print("[yellow]No iterations yet — create one first.[/yellow]")
             return
@@ -128,7 +119,7 @@ class LaunchConsole:
         console.print(f"\n[bold]Extracting patches for [cyan]{name}[/cyan][/bold]")
         Pipeline([ExtractPatchesStage()]).run(ctx)
 
-    def _run(self, iterations: list[str]) -> None:
+    def _run(self, iterations: List[str]) -> None:
         if not iterations:
             console.print("[yellow]No iterations yet — create one first.[/yellow]")
             return
@@ -172,11 +163,11 @@ class LaunchConsole:
 
     # -- display ---------------------------------------------------------------
 
-    def _list_iterations(self) -> list[str]:
+    def _List_iterations(self) -> List[str]:
         self.gc.iterations_dir.mkdir(exist_ok=True)
         return sorted(d.name for d in self.gc.iterations_dir.iterdir() if d.is_dir())
 
-    def _show_table(self, iterations: list[str]) -> None:
+    def _show_table(self, iterations: List[str]) -> None:
         if not iterations:
             console.print("\n[dim]No iterations yet.[/dim]\n")
             return

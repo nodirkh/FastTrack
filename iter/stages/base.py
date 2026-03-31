@@ -6,6 +6,8 @@ from rich.console import Console
 
 from iter.pipeline import Stage, Context
 
+import questionary
+
 console = Console()
 
 
@@ -29,7 +31,8 @@ class BaseStage(Stage):
                 _git(["clone", "--depth=1", gc.tree_url(name), str(path)])
                 _git(["fetch", "--unshallow"], cwd=path, check=False)
             else:
-                console.print(f"    Fetching [cyan]{name}[/cyan]...")
-                _git(["fetch", "--all", "--tags"], cwd=path)
+                if questionary.confirm(f"\nFetch {name}?", default=False).ask():
+                    console.print(f"    Fetching [cyan]{name}[/cyan]...")
+                    _git(["fetch", "--all", "--tags"], cwd=path)
 
         console.print("    [green]Base trees up to date.[/green]")

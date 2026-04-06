@@ -165,7 +165,7 @@ class ConfigBuilder:
             return None, None
         if ref == "HEAD (latest commit)":
             ref = "HEAD"
-        commit = _git(["rev-parse", ref], cwd=tree_path).stdout.strip()
+        commit = _git(["rev-parse", f"{ref}^{{commit}}"], cwd=tree_path).stdout.strip()
         return ref, commit
 
     def _ask_kernel(self) -> dict | None:

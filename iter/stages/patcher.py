@@ -62,8 +62,9 @@ class ApplyPatchesStage(Stage):
         gc        = ctx.global_config
         tree_path = gc.tree_path(cfg.base["tree"])
 
-        # Always start from the locked commit
-        _git(["reset", "--hard", cfg.base_commit], cwd=tree_path)
+        # Always start from the locked commit (dereference tags to commits)
+        commit = _git(["rev-parse", f"{cfg.base_commit}^{{commit}}"], cwd=tree_path).stdout.strip()
+        _git(["reset", "--hard", commit], cwd=tree_path)
 
         if not cfg.patches:
             console.print("    [dim]No patches — skipping.[/dim]")

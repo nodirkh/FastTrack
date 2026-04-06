@@ -60,24 +60,29 @@ class LaunchConsole:
         console.print("\n[bold]Base trees[/bold]")
         Pipeline([BaseStage()]).run(Context(global_config=self.gc))
 
-        iterations = self._List_iterations()
-        self._show_table(iterations)
-
         choices = [
             "Create new iteration",
             "Extract patches  (serialize base/ commits → iteration)",
             "Run iteration    (apply patches → build → boot)",
+            "Quit (exit application)"
         ]
-        action = questionary.select("What would you like to do?", choices=choices).ask()
-        if action is None:
-            sys.exit(0)
+        while True:
+            iterations = self._List_iterations()
+            self._show_table(iterations)
+            
+            action = questionary.select("What would you like to do?", choices=choices).ask()
+            if action is None:
+                sys.exit(0)
 
-        if action.startswith("Create"):
-            self._create()
-        elif action.startswith("Extract"):
-            self._extract(iterations)
-        elif action.startswith("Run"):
-            self._run(iterations)
+            if action.startswith("Create"):
+                self._create()
+            elif action.startswith("Extract"):
+                self._extract(iterations)
+            elif action.startswith("Run"):
+                self._run(iterations)
+            elif action.startswith("Quit"):
+                break
+        
 
     # -- actions ---------------------------------------------------------------
 

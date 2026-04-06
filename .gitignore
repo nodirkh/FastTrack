@@ -1,5 +1,6 @@
 iterations/
 base/
+docker_base/
 
 # Virtual environments
 venv/

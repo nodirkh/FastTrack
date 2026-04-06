@@ -28,11 +28,10 @@ class BaseStage(Stage):
             path = gc.tree_path(name)
             if not path.exists():
                 console.print(f"    [yellow]Cloning {name}[/yellow] (first run — this takes a while...)")
-                _git(["clone", "--depth=1", gc.tree_url(name), str(path)])
-                _git(["fetch", "--unshallow"], cwd=path, check=False)
+                _git(["clone", gc.tree_url(name), str(path)])
             else:
                 if questionary.confirm(f"\nFetch {name}?", default=False).ask():
                     console.print(f"    Fetching [cyan]{name}[/cyan]...")
                     _git(["fetch", "--all", "--tags"], cwd=path)
 
-        console.print("    [green]Base trees up to date.[/green]")
+        # console.print("    [green]Base trees up to date.[/green]")
